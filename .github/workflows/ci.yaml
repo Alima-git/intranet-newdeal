@@ -140,7 +140,7 @@ jobs:
           server_address: smtp.gmail.com
           server_port: 465
           secure: true
-          username: ${{ secrets.ndeyealimas466@gmail.com }}
+          username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "[${{ job.status }}] Push - ${{ github.workflow }}"
           to: moussawade@groupeisi.com
