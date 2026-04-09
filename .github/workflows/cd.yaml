@@ -1,0 +1,66 @@
+name: CD Pipeline - Branche Prod
+
+on:
+  push:
+    branches:
+      - prod
+
+env:
+  IMAGE_NAME: intranet-newdeal
+  IMAGE_TAG: latest
+  DOCKER_REGISTRY: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+
+  # JOB 1 - Scan sécurité
+  security-scan:
+    name: Scan Securite Pre-Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login Docker Hub
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | \
+          docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Pull image
+        run: |
+          docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: Scan Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
+          format: "table"
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
+
+  # JOB 2 - Déploiement
+  deploy:
+    name: Deploiement Production
+    runs-on: self-hosted
+    needs: security-scan
+    steps:
+      - name: Login Docker Hub
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | \
+          docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Stop ancien conteneur
+        run: docker stop intranet-prod || true
+
+      - name: Supprimer ancien conteneur
+        run: docker rm intranet-prod || true
+
+      - name: Lancer nouveau conteneur
+        run: |
+          docker pull ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          docker run -d \
+            --name intranet-prod \
+            -p 80:80 \
+            --restart always \
+            ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: Verifier deploiement
+        run: |
+          sleep 5
+          docker ps | grep intranet-prod
