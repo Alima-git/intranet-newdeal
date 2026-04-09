@@ -1,5 +1,5 @@
 # Image de base nginx demandée par l'examen
-FROM nginx:alpine3.23
+FROM nginx:alpine3.23-slim
 
 # Supprimer le contenu par défaut de nginx
 RUN rm -rf /usr/share/nginx/html/*

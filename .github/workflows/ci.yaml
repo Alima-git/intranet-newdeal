@@ -44,6 +44,24 @@ jobs:
           name: docker-image
           path: image.tar
 
+      - name: Notification email build
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[${{ job.status }}] Build - ${{ github.workflow }}"
+          to: moussawade@groupeisi.com
+          from: ${{ secrets.MAIL_USERNAME }}
+          body: |
+            Pipeline : ${{ github.workflow }}
+            Branche  : ${{ github.ref_name }}
+            Statut   : ${{ job.status }}
+            Commit   : ${{ github.sha }}
+
   # JOB 2 - Scan sécurité
   security-scan:
     name: Scan Securite
@@ -66,13 +84,31 @@ jobs:
         with:
           image-ref: "${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}"
           format: "table"
-          exit-code: "0"
-          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+          severity: "CRITICAL"
 
       - name: Scan secrets Gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notification email scan
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[${{ job.status }}] Scan - ${{ github.workflow }}"
+          to: moussawade@groupeisi.com
+          from: ${{ secrets.MAIL_USERNAME }}
+          body: |
+            Pipeline : ${{ github.workflow }}
+            Branche  : ${{ github.ref_name }}
+            Statut   : ${{ job.status }}
+            Commit   : ${{ github.sha }}
 
   # JOB 3 - Push Docker Hub
   push:
@@ -96,3 +132,21 @@ jobs:
       - name: Push image
         run: |
           docker push ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - name: Notification email push
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.ndeyealimas466@gmail.com }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "[${{ job.status }}] Push - ${{ github.workflow }}"
+          to: moussawade@groupeisi.com
+          from: ${{ secrets.MAIL_USERNAME }}
+          body: |
+            Pipeline : ${{ github.workflow }}
+            Branche  : ${{ github.ref_name }}
+            Statut   : ${{ job.status }}
+            Commit   : ${{ github.sha }}
